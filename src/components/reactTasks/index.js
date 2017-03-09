@@ -18,7 +18,6 @@ function counter(state = 0, action) {
   }
 }
 
-
 const Counter = ({value, onIncrement, onDecrement}) => (
     <div>
       <h1>{value}</h1>
@@ -30,7 +29,6 @@ const Counter = ({value, onIncrement, onDecrement}) => (
       </button>
     </div>
 )
-
 
 //Renders Counter to div with id root
 const render = () => { // render function updates DOM with counter 
@@ -48,14 +46,13 @@ const render = () => { // render function updates DOM with counter
         })
       }
     />,
-    document.getElementById('root')
-  )
-}
+    document.getElementById('base')
+  );
+};
 
 
 //call render function
 store.subscribe(render);
-
 render();
 
 /*
