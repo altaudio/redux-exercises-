@@ -1,10 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import _ from 'lodash'
-import { createStore } from 'redux'
+import { createStore, combineReducers } from 'redux'
 
-//Create store
-const store = createStore(counter);
+/*
 
 //counter reducer
 function counter(state = 0, action) {
@@ -17,6 +16,9 @@ function counter(state = 0, action) {
       return state;
   }
 }
+
+//Create store
+const store = createStore(counter);
 
 const Counter = ({value, onIncrement, onDecrement}) => (
     <div>
@@ -55,7 +57,7 @@ const render = () => { // render function updates DOM with counter
 store.subscribe(render);
 render();
 
-/*
+
 //Avoiding array mutations
 //Adding to an array
 let array = [1,2,3,4,5,6,7];
@@ -77,7 +79,7 @@ const removeCounter = (array, index) => {
 
 console.log(removeCounter(array, 1));
 
-//Update object without mutation
+//Update object without mutation (toggle todo)
 let todo = {
   id : 0,
   text : 'hello',
@@ -104,3 +106,129 @@ console.log('todo object after toggleTodo (unmutated)');
 console.log(todo);
 */
 
+//Todo reducer (deal with individual todos/ objects)
+const todo = (state, action) => {
+  switch(action.type) {
+    //In ass todo case return new todo
+    case 'ADD_TODO' :
+      return {
+          id : action.id,
+          text : action.text,
+          completed : false
+      }
+    //If toggle todo, return toggled todo with id matching action id
+    case 'TOGGLE_TODO' :
+        //if id does not match, return the object
+        if (state.id !== action.id) {
+          return state;
+        }
+        //If the id's do match, return the items in object but overide completed with opposite
+        return {
+          ...state, completed : !state.completed
+        };
+      default :
+        return state;
+  }
+  
+}
+
+//Todos Reducer (deal with all todos/ array)
+const todos = (state = [], action) => {
+  switch (action.type) {
+    //Add new todo to state array
+    case 'ADD_TODO' :
+      return [todo(undefined, action), ...state];
+    //Add toggled todo to state array
+    case 'TOGGLE_TODO' :
+      return state.map(t => todo(t,action));
+    default :
+      return state;
+  }
+}
+
+//visibilityfilter reducer
+//State and action argument (state is current filter)
+
+const visibilityFilter = (state = 'SHOW_ALL', action) => {
+  //switch action, on set filter return action filter type
+  switch (action.type) {
+    case 'SET_VISIBILITY_FILTER' : 
+      return action.filter;
+    default :
+      return state;
+  }
+}
+
+//Two reducers combined
+const todoApp = combineReducers(
+  {
+    //Combined shorthand syntax
+    todos,
+    visibilityFilter
+  }
+);
+
+
+//Entire app reducer
+//This can all be reduced to below, so commented out
+/*
+const todoApp = (state = {}, action) => {
+  return {
+    todos : todos(state.todos, action),
+    visibilityFilter : visibilityFilter(state.visibilityFilter, action)
+  };
+};
+*/
+
+//create store with todos reducer
+const store = createStore(todoApp);
+
+let nextTodoId = 0;
+
+class TodoApp extends React.Component {
+  render() {
+    return(
+        <div>
+          {/* Input new todo label */}
+          <input ref={node => {this.input = node}}/>
+          {/*Button that on click dispatches add_todo action with new incremetned id and input value */}
+          <button onClick={() => { store.dispatch(
+            {
+              type : 'ADD_TODO',
+              text : this.input.value,
+              id : nextTodoId++
+            });
+            this.input.value = ' ';
+          }}>ADD TODO </button>
+          {/* Unordered list of todos */}
+          <ul>
+            {_.map(this.props.todos, (t) => {
+                return <li 
+                  key={t.id}
+                  onClick={() => {
+                    store.dispatch({type : 'TOGGLE_TODO', id : t.id})
+                    console.log(store.getState());
+
+                  }}
+                  style={{textDecoration : t.completed ? 'line-through' : 'none'}}
+                >{t.text}</li>
+              })
+            }
+          </ul>
+
+        </div>
+      )
+  }
+}
+//Renders Counter to div with id root
+const render = () => { // render function updates DOM with counter 
+  ReactDOM.render(
+    <TodoApp 
+      todos={store.getState().todos}
+    />,
+    document.getElementById('base')
+  );
+};
+
+store.subscribe(render);
+render();
