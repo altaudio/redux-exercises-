@@ -48,7 +48,7 @@ const render = () => { // render function updates DOM with counter
         })
       }
     />,
-    document.getElementById('#root')
+    document.getElementById('root')
   )
 }
 
