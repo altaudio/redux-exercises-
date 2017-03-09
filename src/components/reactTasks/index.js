@@ -196,75 +196,124 @@ const getVisibleTodos = (todos, filter) => {
 }
 
 //FilterLink React component
-const FilterLink = ({filter, children}) => {
+const FilterLink = ({filter, onClick, children}) => {
   return (
       <a 
         href='#'
         onClick={(e) => {
           e.preventDefault();
-          store.dispatch({
-            type : 'SET_VISIBILITY_FILTER', 
-            filter : filter
-          })
+          onClick(filter);
         }}
       >{children}</a>
     );
 };
 
+//Extracting todo component which renders a single todo
+const Todo = ({onClick, completed, text}) => (
+  <li
+    onClick={onClick}
+    style={{textDecoration : completed ? 'line-through' : 'none'}}
+  >{text}</li>
+);
+
+//Extracting Todolist component, accepts array of todos and renders a <ul>
+const TodoList = ({todos, onTodoClick}) => (
+  <ul>
+    {todos.map(todo =>
+      <Todo
+        key={todo.id}
+        {...todo}
+        onClick={() => onTodoClick(todo.id)}
+      />
+    )}
+  </ul>
+);
+
+//Extracted addTodo component
+const AddTodo = ({onAddClick}) => {
+  let input;
+
+  return (
+    <div>
+      <input ref={node => {
+        input = node;
+      }} />
+      <button onClick={() => {
+        onAddClick(input.value);
+        input.value = ' ';
+      }}>Add Todolist
+      </button>
+    </div>
+  );
+};
+
+//Extracted Footer filter link
+const Footer = ({
+  visibilityFilter,
+  onFilterClick
+}) => (
+  <p>
+    Show: 
+    {' '}
+    <FilterLink 
+      filter='SHOW_ALL'
+      currentFilter={visibilityFilter}
+      onClick={onFilterClick}
+      >ALL</FilterLink>
+    {' '}
+
+    {' '}
+    <FilterLink 
+      filter='SHOW_ACTIVE'
+      currentFilter={visibilityFilter}
+      onClick={onFilterClick}
+    >ACTIVE</FilterLink>
+    {' '}
+
+    {' '}
+     <FilterLink 
+        filter='SHOW_COMPLETED'
+        currentFilter={visibilityFilter}
+        onClick={onFilterClick}>COMPLETED</FilterLink>
+    {' '}
+  </p> 
+)
+
 
 let nextTodoId = 0;
-class TodoApp extends React.Component {
-  render() {
-    //Get visible todos to display
-    const visibleTodos = getVisibleTodos(
-      this.props.todos,
-      this.props.visibilityFilter
-    );
-    return(
-        <div>
-          {/* Input new todo label */}
-          <input ref={node => {this.input = node}}/>
-          {/*Button that on click dispatches add_todo action with new incremetned id and input value */}
-          <button onClick={() => { store.dispatch(
-            {
-              type : 'ADD_TODO',
-              text : this.input.value,
-              id : nextTodoId++
-            });
-            this.input.value = ' ';
-          }}>ADD TODO </button>
-          {/* Unordered list of todos */}
-          <ul>
-            {_.map(visibleTodos, (t) => {
-                return <li 
-                  key={t.id}
-                  onClick={() => {
-                    store.dispatch({type : 'TOGGLE_TODO', id : t.id})
-                  }}
-                  style={{textDecoration : t.completed ? 'line-through' : 'none'}}
-                >{t.text}</li>
-              })
-            }
-          </ul>
-          <p>
-            Show: 
-              {' '}
-              <FilterLink filter='SHOW_ALL'>ALL</FilterLink>
-              {' '}
+const TodoApp = ({todos, visibilityFilter}) => (
+  <div>
+    {/* Input and addTodo button */}
+    <AddTodo onAddClick = {text => 
+      store.dispatch({
+        type : 'ADD_TODO',
+        id : nextTodoId++,
+        text
+      })
+    } />
 
-              {' '}
-              <FilterLink filter='SHOW_ACTIVE'>ACTIVE</FilterLink>
-              {' '}
+    {/* Unordered list of todos */}
+    <TodoList
+      todos={getVisibleTodos(
+        todos,
+        visibilityFilter
+      )}
+      onTodoClick = { id =>
+        store.dispatch({
+          type : 'TOGGLE_TODO',
+          id
+      })
+      } />
+      <Footer 
+        visibilityFilter={visibilityFilter}
+        onFilterClick={filter =>
+          store.dispatch({
+            type : 'SET_VISIBILITY_FILTER',
+            filter
+          })} />
+  </div>
+)
 
-              {' '}
-              <FilterLink filter='SHOW_COMPLETED'>COMPLETED</FilterLink>
-              {' '}
-          </p>   
-
-        </div>
-      )
-  }
-}
 //Renders Counter to div with id root
 const render = () => { // render function updates DOM with counter 
   ReactDOM.render(
